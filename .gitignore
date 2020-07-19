@@ -1,0 +1,8 @@
+.tf
+.vscode
+data
+logs
+notebooks
+**/__pycache__
+**/**/__pycache__
+**/**/**/__pycache__
