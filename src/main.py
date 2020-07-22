@@ -9,10 +9,8 @@ from util.train import train_epoch
 from util.evaluate import evaluate_epoch
 
 # parse and initialize configuration
-config = Config("train")
+config = Config()
 model_name = config.model_name()
-base_dir = f"{config.output}/"
-base_audio = f"{config.output}/audio/{model_name}"
 
 # intitialize data loader
 loader, config = load_dataset(config)
@@ -31,8 +29,8 @@ TRAINING
 """
 start_time = time.time()
 losses = torch.zeros(config.epochs, 3)
-if config.epochs == 0:
-    losses = torch.zeros(200, 3)
+# if config.epochs == 0:
+#     losses = torch.zeros(200, 3)
 best_loss = np.inf
 early = 0
 
@@ -65,8 +63,8 @@ for i in range(config.epochs):
     # print(f"{config.beta} - {config.gamma}")
 
     # One epoch of training
-    losses[i, 0] = train_epoch(model, loader["train"], loss, optimizer, config)
-    losses[i, 1] = evaluate_epoch(model, loader["valid"], loss, config)
+    losses[i, 0] = train_epoch(model, loader["train"], model_constructor.rec_loss, loss, optimizer, config)
+    losses[i, 1] = evaluate_epoch(model, loader["valid"], model_constructor.rec_loss, loss, config)
     if (config.model not in ["ae", "vae", "wae", "vae_flow"]) or (
         i >= config.start_regress
     ):
