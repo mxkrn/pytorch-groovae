@@ -1,21 +1,24 @@
-def train_epoch(model, loader, loss_params, optimizer, args):
-    model.train()
+from torch import autograd
+from torch.nn.functional import mse_loss
+
+
+def train_epoch(model, loader, rec_loss, loss_params, optimizer, args):
     full_loss = 0
-    for x in loader:
+    for batch in loader:
+        # with autograd.detect_anomaly():
+        x = batch[0]
         x = x.to(args.device, non_blocking=True)  # Send to device
 
-        hidden = model.encoder.initHidden()
+        hidden = model.encoder.initHidden().to(args.device, non_blocking=True)
         recon_x, z_loss, mu, log_var = model(x, hidden)
 
         # Reconstruction loss
-        rec_loss = model.recons_loss(recon_x, x)
+        rec_loss = mse_loss(recon_x, x)
 
         # TODO: Regression loss
 
         # Final loss
-        b_loss = rec_loss + (
-            args.beta * z_loss
-        )
+        b_loss = rec_loss + z_loss
         #  + (args.gamma * reg_loss)).mean(dim=0)
 
         # Perform backward

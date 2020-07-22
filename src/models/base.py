@@ -32,13 +32,14 @@ class ModelConstructor:
             verbose=True,
             threshold=1e-7,
         )
+        self.rec_loss = self._get_rec_loss()
         self.loss = self._get_loss()
 
     def _format(self):
         if self.config.loss in ["multinomial"]:
             self.config.output_size *= self.config.n_classes
         elif self.config.loss in ["multi_mse"]:
-            self.config.output_size *= self.config.args.n_classes + 1
+            self.config.output_size *= self.config.n_classes + 1
 
     def _get_model(self, default="vae"):
         models = {
