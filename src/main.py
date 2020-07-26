@@ -5,8 +5,8 @@ import torch
 from data.loader import load_dataset
 from models.base import ModelConstructor
 from util.config import Config
-from util.train import train_epoch
-from util.evaluate import evaluate_epoch
+from util.train import Train
+from util.evaluate import Evaluate
 
 # parse and initialize configuration
 config = Config()
@@ -15,12 +15,13 @@ model_name = config.model_name()
 # intitialize data loader
 loader, config = load_dataset(config)
 
+
 # construct model
 model_constructor = ModelConstructor(config)
 model = model_constructor._model.to(config.device)
 optimizer = model_constructor.optimizer
 scheduler = model_constructor.scheduler
-loss = model_constructor.loss
+reconstruction_loss = model_constructor.rec_loss
 
 """
 -------------------------------------
@@ -29,13 +30,13 @@ TRAINING
 """
 start_time = time.time()
 losses = torch.zeros(config.epochs, 3)
-# if config.epochs == 0:
-#     losses = torch.zeros(200, 3)
+if config.epochs == 0:
+    losses = torch.zeros(200, 3)
 best_loss = np.inf
 early = 0
 
 print("Starting training...")
-for i in range(config.epochs):
+for e in range(config.epochs):
     # if config.start_regress == 0:  # print a summary of all objects
     #     from pympler import muppy, summary
 
@@ -44,73 +45,38 @@ for i in range(config.epochs):
     #     print(f"************ Summary (Epoch {str(i)}) ************")
     #     summary.print_(sum1)
 
-    # Set warm-up values
-    # config.beta = config.beta_factor * (float(i) / float(max(config.warm_latent, i)))
-    # if i >= config.start_regress:
-    #     config.gamma = (float(i - config.start_regress) * config.reg_factor) / float(
-    #         max(config.warm_regress, i - config.start_regress)
-    #     )
-    #     if config.regressor != "mlp":
-    #         config.gamma *= 1e-1
-    # else:
-    #     config.gamma = 0
-    # if i >= config.start_disentangle:
-    #     config.delta = (float(i - config.start_disentangle)) / float(
-    #         max(config.warm_disentangle, i - config.start_disentangle)
-    #     )
-    # else:
-    #     config.delta = 0
-    # print(f"{config.beta} - {config.gamma}")
-
     # One epoch of training
-    losses[i, 0] = train_epoch(model, loader["train"], model_constructor.rec_loss, loss, optimizer, config)
-    losses[i, 1] = evaluate_epoch(model, loader["valid"], model_constructor.rec_loss, loss, config)
+    train = Train(config, e)
+    losses[e, 0] = train.epoch(model, loader['train'], reconstruction_loss, optimizer)
+
+    evaluate = Evaluate(config)
+    losses[e, 1] = evaluate.epoch(model, loader["valid"], reconstruction_loss)
+
     if (config.model not in ["ae", "vae", "wae", "vae_flow"]) or (
-        i >= config.start_regress
+        e >= config.start_regress
     ):
-        scheduler.step(losses[i, 1])  # schedule learning rate
+        scheduler.step(losses[e, 1])  # schedule learning rate
 
-    losses[i, 2] = model.eval_epoch(loader["test"], loss, config)  # test evaluation
+    losses[e, 2] = evaluate.epoch(model, loader["test"], reconstruction_loss)  # test evaluation
+
     if config.start_regress == 1000:
-        losses[i, 1] = losses[i, 0]
-        losses[i, 2] = losses[i, 0]
+        losses[e, 1] = losses[e, 0]
+        losses[e, 2] = losses[e, 0]
 
-    if losses[i, 1] < best_loss:  # save model
-        best_loss = losses[i, 1]
+    if losses[e, 1] < best_loss:  # save model
+        best_loss = losses[e, 1]
         print(f"new best model: {config.output}/models/{model_name}.model")
-        torch.save(model, f"{config.output}/models/{model_name}.model")
+        torch.save(model, f"/home/max/repos/rhythmflow/{config.output}/models/{model_name}.model")
         early = 0
     elif (
-        config.early_stop > 0 and i >= config.start_regress
+        config.early_stop > 0 and e >= config.start_regress
     ):  # check for early stopping
         early += 1
         if early > config.early_stop:
             print("stopping early")
             break
-
-    if (i + 1) % config.plot_interval == 0 or (
-        config.epochs == 1
-    ):  # periodic evaluation (or debug model)
-        config.plot = "train"
-        with torch.no_grad():
-            model.eval()
-            # TODO: Write model evaluation function
-            # evaluate_model(model, fixed_batch, loader['test'], config, train=True, name=base_img + '_batch_' + str(i))
-
-    if (config.time_limit > 0) and (
-        ((time.time() - start_time) / 60.0) > config.time_limit
-    ):  # time limit for HPC
-        print(
-            "hit time limit after "
-            + str((time.time() - start_time) / 60.0)
-            + " minutes."
-        )
-        print("entering evaluation mode")
-        break
-    if config.regressor == "flow_kl_f":
-        print(torch.cuda.memory_allocated(config.device))
-    print(f"Epoch {str(i)}")
-    print(f"Loss: {losses[i]}")
+    print(f"Epoch {str(e)}")
+    print(f"Loss: {losses[e]}")
     torch.cuda.empty_cache()
 
 

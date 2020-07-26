@@ -4,20 +4,23 @@ import torch
 from models.vae.encoder import BaseRNNEncoder
 from models.vae.decoder import BaseRNNDecoder
 from data.loader import load_dataset
-from data.constants import SEQUENCE_LENGTH, NUM_DRUM_PITCH_CLASSES
+from data.constants import SEQUENCE_LENGTH
 from util.config import Config
 
 
 @pytest.fixture
 def config():
-    return Config(n_layers=2, batch_size=2)
+    return Config(
+        n_layers=2,
+        batch_size=2
+    )
 
 
 @pytest.fixture
 def data(config):
     loader = load_dataset(config)
     i = 0
-    for x, y in loader[0]['valid']:
+    for x, y in loader[0]["train"]:
         if i < 1:
             sample = x.to(config.device)
             target = y.to(config.device)
@@ -31,7 +34,8 @@ def test_encoder(config, data):
         config.hidden_size,
         config.latent_size,
         config.batch_size,
-        n_layers=config.n_layers
+        n_layers=config.n_layers,
+        encoder_type=config.encoder_type
     )
     encoder.to(config.device)
     encoder.train()
@@ -68,7 +72,8 @@ def test_decoder(config, encoder_output_fixture):
         config.hidden_size,
         config.latent_size,
         config.batch_size,
-        n_layers=config.n_layers
+        n_layers=config.n_layers,
+        encoder_type=config.decoder_type
     )
     decoder.to(config.device)
     decoder.train()

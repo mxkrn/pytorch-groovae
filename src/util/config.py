@@ -24,7 +24,9 @@ class Config:
             "dataset_type": "groove",
             "output": "outputs",
             "train_type": "random",
-            "nbworkers": 0,
+            "nbworkers": 4,
+            "encoder_type": "rnn",
+            "decoder_type": "rnn",
             "model": "vae",
             "loss": "mse",
             "rec_loss_type": "mse",
@@ -33,6 +35,10 @@ class Config:
             "hidden_size": 256,
             "latent_size": 5,
             "note_dropout": 0.1,
+            "start_regress": 100,
+            "reg_factor": 1e3,  # regression loss weight
+            "beta_factor": 1,  # latent loss weight
+            "warm_latent": 50,  # warm-up epochs for latent
             "flow": "iaf",  # flow
             "flow_length": 16,
             "regressor": "",  # regressor
@@ -41,10 +47,10 @@ class Config:
             "reg_flow": "maf",
             "reg_factor": 1e3,
             "loss_type": "mse",  # optimization
-            "early_stop": 60,
+            "early_stop": 10,
             "plot_interval": 100,
-            "batch_size": 8,
-            "epochs": 5,
+            "batch_size": 16,
+            "epochs": 100,
             "eval": 100,
             "lr": 2e-4,
             "semantic_dim": -1,  # semantic
@@ -64,7 +70,7 @@ class Config:
             torch.backends.cudnn.benchmark = True  # Enable CuDNN optimization
 
     def model_name(self):
-        model_name = f"{self.model}_{self.dataset}_{self.loss}_{self.latent_dims}"
+        model_name = f"{self.model}_{self.dataset}_{self.loss}_{self.latent_size}"
         return model_name
 
     def _cuda(self):

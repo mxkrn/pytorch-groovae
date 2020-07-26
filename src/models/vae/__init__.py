@@ -1,4 +1,5 @@
-from .ae import AE, RegressionAE, DisentanglingAE
-from .vae import VAE, VAEFlow
+from .decoder import BaseRNNDecoder
+from .encoder import BaseRNNEncoder
+from .vae import VAE
 
-__all__ = [AE, RegressionAE, DisentanglingAE, VAE, VAEFlow]
+__all__ = [BaseRNNEncoder, BaseRNNDecoder, VAE]

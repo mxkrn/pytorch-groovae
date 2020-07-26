@@ -37,14 +37,14 @@ class BaseRNNEncoder(nn.Module):
                 batch_first=True,
                 dropout=self._dropout,
                 bidirectional=self._bidirectional),
-            "lstm": nn.LSTM(
-                self._hidden_size,
-                self._hidden_size,
-                self._n_layers,
-                batch_first=True,
-                dropout=self._dropout,
-                bidirectional=self._bidirectional
-            ),
+            # "lstm": nn.LSTM(
+            #     self._hidden_size,
+            #     self._hidden_size,
+            #     self._n_layers,
+            #     batch_first=True,
+            #     dropout=self._dropout,
+            #     bidirectional=self._bidirectional
+            # ),
             "gru": nn.GRU(
                 self._hidden_size,
                 self._hidden_size,
@@ -54,7 +54,11 @@ class BaseRNNEncoder(nn.Module):
                 bidirectional=self._bidirectional
             )
         }
-        self._encoder_layer = types[self._encoder_type]
+        try:
+            self._encoder_layer = types[self._encoder_type]
+        except KeyError:
+            print(f'invalid encoder type: {self._encoder_type}')
+            raise
         self._encoder_layer.flatten_parameters()
 
     def forward(self, x, hidden):

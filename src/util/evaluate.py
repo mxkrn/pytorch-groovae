@@ -1,26 +1,41 @@
 import torch
 
 
-def evaluate_epoch(model, loader, loss_params, args):
-    model.eval()
-    full_loss = 0
-    with torch.no_grad():
-        for x in loader:
-            x = x.to(args.device, non_blocking=True)
-            hidden = model.initHidden()
-            recon_x, z_loss, mu, log_var = model(x, hidden)
+class Evaluate:
 
-            # Reconstruction loss
-            rec_loss = model.recons_loss(recon_x, x)
+    def __init__(self, config):
+        """
+        This class is a wrapper that generates that appropriate
+        training scheme needed for each model_type
+        """
+        self.config = config
+        self.epoch = self._generator(config.model)
 
-            # TODO: Regression loss
+    def _generator(self, model_type):
+        models = {
+            'vae': self.vae
+        }
+        return models[model_type]
 
-            # Final loss
-            b_loss = rec_loss + (
-                args.beta * z_loss
-            )
-            #  + (args.gamma * reg_loss)).mean(dim=0)
+    def vae(self, model, loader, loss):
+        full_loss = 0
+        model.eval()
 
-            full_loss += b_loss
-        full_loss /= len(loader)
-    return full_loss
+        with torch.no_grad():
+            for batch in loader:
+                # Prepare input
+                x = batch[0].to(self.config.device, non_blocking=True)
+                target = batch[1].to(self.config.device, non_blocking=True)
+                hidden = model.encoder.init_hidden().to(self.config.device, non_blocking=True)
+
+                # Forward pass
+                y, z_loss, r_loss = model(x, hidden, target)
+
+                # Reconstruction loss
+                rec_loss = loss(y, x)
+
+                # Final loss
+                b_loss = (rec_loss + self.config.gamma*r_loss + z_loss*self.config.beta).mean(dim=0)
+                full_loss += b_loss
+            full_loss /= len(loader)
+        return full_loss
