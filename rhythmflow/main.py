@@ -10,7 +10,7 @@ from util.train import Train
 from util.evaluate import Evaluate
 
 # parse and initialize configuration
-config = Config()
+config = Config(nbworkers=1)
 model_name = config.model_name()
 
 # intitialize data loader

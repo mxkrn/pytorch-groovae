@@ -34,7 +34,8 @@ class BaseRNNDecoder(nn.Module):
         return output, r_loss
 
     def sample(self, z, hidden):
-        return self._decode(z, hidden)
+        output = self._decode(z, hidden)
+        return output
 
     def _build(self):
         types = {

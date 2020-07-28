@@ -14,6 +14,7 @@ N_LAYERS = 2
 BATCH_SIZE = 8
 HIDDEN_SIZE = 256
 LATENT_SIZE = 5
+NBWORKERS = 1
 
 
 @pytest.fixture
@@ -22,15 +23,16 @@ def config():
         n_layers=N_LAYERS,
         batch_size=BATCH_SIZE,
         hidden_size=HIDDEN_SIZE,
-        latent_size=LATENT_SIZE
+        latent_size=LATENT_SIZE,
+        nbworkers=NBWORKERS
     )
 
 
 @pytest.fixture
 def batch(config):
-    loader = load_dataset(config)
+    loader, config = load_dataset(config)
     i = 0
-    for x, y in loader[0]["train"]:
+    for x, y in loader["train"]:
         if i < 1:
             i += 1
             sample = x.to(config.device)

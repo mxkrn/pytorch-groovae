@@ -42,22 +42,24 @@ class VAE(nn.Module):
 
         self.apply(self._init_parameters)
 
-    def sample(self, x=None, z=None):
-        hidden = self.init_hidden()
+    def sample(self, x, hidden, target, z=None):
         if x is not None:
-            mu, log_var, hidden = self._encoder(x, hidden)
-            z, _ = self._reparametrize(mu, log_var)
+            output, _, r_loss = self.forward(x, hidden, target)  # Decode the samples
+        elif z is not None:
+            hidden = self.encoder.init_hidden().to(z.device)
+            output = self.decoder.sample(z, hidden)
         else:
-            z = torch.zeros((SEQUENCE_LENGTH, self._latent_size)) if z is None else z
+            raise ValueError(
+                f'you must pass one of x: [{SEQUENCE_LENGTH, self._input_size}] or'
+                'z [{SEQUENCE_LENGTH, self._latent_size}]')
 
-        output = self.decoder.sample(z, hidden)
         onsets, velocities, offsets = torch.split(
             output, NUM_DRUM_PITCH_CLASSES, len(output.size()) - 1)
 
         onsets_distrib = torch.distributions.bernoulli.Bernoulli(logits=onsets)
         onsets_sample = onsets_distrib.sample()
-        
-        return torch.cat([onsets_sample, velocities, offsets], dim=2)
+
+        return torch.cat([onsets_sample, velocities, offsets], dim=2), r_loss
 
     def forward(self, x, hidden, target):
         mu, log_var, hidden = self._encode(x, hidden)  # Gaussian encoding
@@ -76,16 +78,6 @@ class VAE(nn.Module):
         output, r_loss = self.decoder(output, hidden, target)
         return output, r_loss
 
-    # def _gaussian_decode(self, z, hidden, target):
-    #     output, r_loss = self.decoder(z)
-    #     output = output.view(-1, np.prod(self._input_size))
-    #     mu = self.mu_decoder(output)
-    #     log_var = self.log_var_decoder(output)
-    #     q = distrib.Normal(torch.zeros(mu.size(1)), torch.ones(log_var.size(1)))
-    #     eps = q.sample((mu.size(0), )).detach().to(self.device)
-    #     output = (log_var.exp().sqrt() * eps) + mu
-    #     return output.view(-1, * self.input_dims)
-
     def _reparametrize(self, mu, log_var):
         """
         Latent samples by reparametrization technique
@@ -95,8 +87,7 @@ class VAE(nn.Module):
         z = (log_var.exp().sqrt() * eps) + mu  # get latent vector
 
         kl_div = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-        kl_div = kl_div / self._batch_size
-        return z, kl_div
+        return z, (kl_div / self._batch_size)
 
     @staticmethod
     def _init_parameters(module):
