@@ -75,9 +75,13 @@ class BaseRNNDecoder(nn.Module):
         target_onsets, target_velocities, target_offsets = torch.split(
             target, NUM_DRUM_PITCH_CLASSES, len(target.size()) - 1)
 
-        onset_loss = F.binary_cross_entropy(torch.sigmoid(onsets), target_onsets)
-        velocity_loss = F.mse_loss(velocities, target_velocities)
-        offset_loss = F.mse_loss(F.hardtanh(offsets), offsets)
+        sigm_velocities = torch.sigmoid(velocities)
+        sigm_onsets = torch.sigmoid(onsets)
+        # tanh_offsets = torch.sigmoid(offsets)
+
+        onset_loss = F.binary_cross_entropy(sigm_onsets, target_onsets)
+        velocity_loss = F.mse_loss(sigm_velocities, target_velocities)
+        offset_loss = F.mse_loss(offsets, target_offsets)
         loss = onset_loss + velocity_loss + offset_loss
         return loss
 

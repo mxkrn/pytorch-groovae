@@ -21,7 +21,7 @@ class Config:
     def _load_params(self):
         return {
             "dataset": "drumlab",
-            "datadir": "/mnt/c/Users/Public/Documents/Drum Lab/MIDI Files/**/**/",
+            "datadir": "/mnt/c/Users/maxkr/data/gmd_drumlab_merge/",
             "dataset_type": "groove",
             "output": "outputs",
             "train_type": "random",
@@ -31,15 +31,16 @@ class Config:
             "model": "vae",
             "loss": "mse",
             "rec_loss_type": "mse",
-            "n_hidden": 512,
-            "n_layers": 3,
-            "hidden_size": 512,
-            "latent_size": 16,
-            "note_dropout": 0.05,
-            "start_regress": 40,
+            "n_hidden": 256,
+            "n_layers": 2,
+            "hidden_size": 256,
+            "latent_size": 8,
+            "note_dropout": 0.1,
+            "start_regress": 20,
             "reg_factor": 1e3,  # regression loss weight
             "beta_factor": 1e1,  # latent loss weight
-            "warm_latent": 50,  # warm-up epochs for latent
+            "gamma_factor": 1e2,
+            "warm_latent": 20,  # warm-up epochs for latent
             "flow": "iaf",  # flow
             "flow_length": 16,
             "regressor": "",  # regressor
@@ -51,7 +52,7 @@ class Config:
             "early_stop": 40,
             "plot_interval": 100,
             "batch_size": 16,
-            "epochs": 400,
+            "epochs": 100,
             "eval": 100,
             "lr": 1e-4,
             "semantic_dim": -1,  # semantic
