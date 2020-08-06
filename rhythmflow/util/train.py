@@ -53,12 +53,12 @@ class Train:
 
         # Set warm-up values
     def loss_params(self, config, epoch):
-        config.beta = config.beta_factor
-        config.gamma = config.gamma_factor
-        # config.beta = config.beta_factor * (float(epoch) / float(max(config.warm_latent, epoch))) + 0.1
-        # if epoch >= config.start_regress:
-        #     config.gamma = config.gamma_factor * (float(epoch) / float(max(config.warm_latent, epoch)))
-        # else:
-        #     config.gamma = 0
-        # print(f"{config.beta} - {config.gamma}")
+        # config.beta = config.beta_factor
+        # config.gamma = config.gamma_factor
+        config.beta = config.beta_factor * (float(epoch) / float(max(config.warm_latent, epoch))) + 0.1
+        if epoch >= config.start_regress:
+            config.gamma = config.gamma_factor * (float(epoch) / float(max(config.warm_latent, epoch)))
+        else:
+            config.gamma = 0
+        print(f"{config.beta} - {config.gamma}")
         return config

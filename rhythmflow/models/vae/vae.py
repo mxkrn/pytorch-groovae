@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 from data.constants import SEQUENCE_LENGTH, NUM_DRUM_PITCH_CLASSES
 
@@ -32,46 +31,42 @@ class BaseVAE(nn.Module):
         self.decoder._build()
 
         # latent encoder
-        self.mu = nn.Linear(self._hidden_size, self._latent_size)
-        self.log_var = nn.Linear(self._hidden_size, self._latent_size)
-
+        self.mu = nn.Sequential(
+            nn.Linear(self._hidden_size, self._latent_size)
+        )
+        self.log_var = nn.Sequential(
+            nn.Linear(self._hidden_size, self._latent_size),
+            nn.Softplus()
+        )
         # latent decoder
         self.from_latent = nn.Linear(self._latent_size, self._hidden_size)
-        gd_dims = np.prod(self._input_size)
-        self.mu_decoder = nn.Linear(gd_dims, gd_dims)
-        self.log_var_decoder = nn.Linear(gd_dims, gd_dims)
 
-        # self.apply(self._init_parameters)
-
-    def sample(self, x, hidden, target, z=None):
-        if x is not None:
-            output, _, r_loss = self.forward(x, hidden, target)  # Pass x thru the autoencoder network
-        elif z is not None:
-            hidden = self.encoder.init_hidden().to(z.device)
-            output = self.decoder.sample(z, hidden)
-        else:
-            raise ValueError(
-                f'you must pass one of x: [{SEQUENCE_LENGTH, self._input_size}] or'
-                'z [{SEQUENCE_LENGTH, self._latent_size}]')
-
+    def sample(self, x, hidden, target):
+        output, _, r_loss = self.forward(x, hidden, target)  # Pass x thru the autoencoder network
         output = self._sample(output)
-        return output, r_loss
+        return output
+
+    def z_sample(self, mu, log_var, hidden, target):
+        output = self._z_sample(mu, log_var, hidden, target)
+        return output
 
     def forward(self, x, hidden, target):
-        mu, log_var, hidden = self._encode(x, hidden)  # Gaussian encoding
+        mu, log_var, hidden = self._encode(x)  # Gaussian encoding
         z, z_loss = self._reparametrize(mu, log_var)
-        output, r_loss = self._decode(z, hidden, target)  # Decode the samples
+        output, r_loss = self._decode(z, target)  # Decode the samples
         return output, z_loss, r_loss
 
     def _encode(self, x, hidden):
-        encoder_output, _ = self.encoder(x, hidden)  # h = input for latent variables
+        encoder_output, hidden = self.encoder(x, hidden)  # h = input for latent variables
+        # mu = self.mu_pooling(torch.tranpose(encoder_output, 1, 2))
         mu = self.mu(encoder_output)
+        # log_var = self.mu_pooling(torch.tranpose(encoder_output, 1, 2))
         log_var = self.log_var(encoder_output)
         return mu, log_var, hidden
 
-    def _decode(self, z, hidden, target):
+    def _decode(self, z, target):
         output = self.from_latent(z)
-        output, r_loss = self.decoder(output, hidden, target)
+        output, r_loss = self.decoder(output, target)
         return output, r_loss
 
     def _reparametrize(self, mu, log_var):
@@ -79,11 +74,10 @@ class BaseVAE(nn.Module):
         Latent samples by reparametrization technique
         KL divergence from https://arxiv.org/pdf/1312.6114.pdf
         """
-        eps = torch.randn_like(mu).detach().to(mu.device)  # re-parametrize
-        z = (log_var.exp().sqrt() * eps) + mu  # get latent vector
-
+        eps = torch.randn_like(mu)  # standard normal distribution
+        z = (log_var.exp().sqrt() * eps) + mu  # reparametrize
         kl_div = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-        return z, (kl_div / self._batch_size)
+        return z, kl_div
 
     def _sample(self, output):
         raise NotImplementedError
@@ -114,15 +108,24 @@ class VAE(BaseVAE):
     def _sample(self, output):
         onsets, velocities, offsets = torch.split(
             output, NUM_DRUM_PITCH_CLASSES, len(output.size()) - 1)
-        offsets = F.tanh(offsets)
 
         onsets_distrib = torch.distributions.bernoulli.Bernoulli(logits=onsets)
         onsets_sample = onsets_distrib.sample()
 
-        velocities_distrib = torch.distributions.continuous_bernoulli.ContinuousBernoulli(logits=velocities)
-        velocities_sample = velocities_distrib.sample()
+        velocities_sample = torch.sigmoid(velocities)
+        offsets_sample = F.tanh(offsets)
 
-        return torch.cat([onsets_sample, velocities_sample, offsets], dim=2)
+        velocities_sample = velocities_sample
+        offsets_sample = offsets_sample
+
+        return torch.cat([onsets_sample, velocities_sample, offsets_sample], dim=2)
+
+    def _z_sample(self, mu, log_var, hidden, target):
+        eps = torch.randn_like(mu)
+        z = (log_var.exp().sqrt() * eps) + mu
+        output, _ = self._decode(z, hidden, target)
+        output = self._sample(output)
+        return output
 
 
 class VAEFlow(BaseVAE):

@@ -1,4 +1,5 @@
 from __future__ import print_function
+import argparse
 import torch
 
 
@@ -14,32 +15,42 @@ class Config:
                 self.params[key] = value
             else:
                 print(f'invalid configuration item: {key}')
-        self.__dict__ = self.params
-        self._check_args()
+        self._parse()
         self._cuda()
+        self.__dict__ = self.params
+
+    def add_argument(self, key, value, check_exists=True):
+        if key in self.params.keys():
+            self.params[key] = value
+        elif not check_exists:
+            self.params[key] = value
+        else:
+            print(f'invalid configuration argument: {key}')
+            raise KeyError
 
     def _load_params(self):
-        return {
+        params = {
+            "train": True,
+            "logging": 0,
             "dataset": "drumlab",
             "datadir": "/mnt/c/Users/maxkr/data/gmd_drumlab_merge/",
             "dataset_type": "groove",
             "output": "outputs",
             "train_type": "random",
             "nbworkers": 8,
-            "encoder_type": "gru",
-            "decoder_type": "gru",
+            "encoder_type": "rnn",
+            "decoder_type": "rnn",
             "model": "vae",
             "loss": "mse",
             "rec_loss_type": "mse",
-            "n_hidden": 256,
-            "n_layers": 2,
+            "n_hidden": 512,
+            "n_layers": 1,
             "hidden_size": 256,
-            "latent_size": 8,
+            "latent_size": 1,
             "note_dropout": 0.1,
-            "start_regress": 20,
-            "reg_factor": 1e3,  # regression loss weight
-            "beta_factor": 1e1,  # latent loss weight
-            "gamma_factor": 1e2,
+            "start_regress": 15,
+            "beta_factor": 1e3,  # latent loss weight
+            "gamma_factor": 1,
             "warm_latent": 20,  # warm-up epochs for latent
             "flow": "iaf",  # flow
             "flow_length": 16,
@@ -52,7 +63,7 @@ class Config:
             "early_stop": 40,
             "plot_interval": 100,
             "batch_size": 16,
-            "epochs": 100,
+            "epochs": 400,
             "eval": 100,
             "lr": 1e-4,
             "semantic_dim": -1,  # semantic
@@ -66,25 +77,31 @@ class Config:
             "time_limit": -1,
             "device": ""
         }
-
-    def _check_args(self):
-        if self.device != "cpu":
-            torch.backends.cudnn.benchmark = True  # Enable CuDNN optimization
+        return params
 
     def model_name(self):
-        model_name = f"{self.model}_{self.encoder_type}_{self.loss}_{self.n_layers}_{self.hidden_size}_{self.latent_size}_{self.batch_size}"
+        model_name = f"{self.model}_{self.encoder_type}_{self.loss}_" \
+                    f"{self.n_layers}_{self.hidden_size}_beta{self.beta_factor}" \
+                    f"{self.latent_size}_{self.batch_size}"
         return model_name
 
     def _cuda(self):
-        self.cuda = torch.cuda.is_available()
-        if self.device == "cpu":
-            pass
-        if self.cuda:
-            self.device = torch.device(torch.cuda.current_device())
-            print(f"optimization will be on {torch.cuda.get_device_name()}")
-        else:
-            self.device = torch.device("cpu")
+        if self.params["device"] == "cpu":
+            self.params["device"] = torch.device("cpu")
             print("optimization will be on cpu")
+        else:
+            self.params["device"] = torch.device(torch.cuda.current_device())
+            print(f"optimization will be on {torch.cuda.get_device_name()}")
+            torch.backends.cudnn.benchmark = True  # Enable CuDNN optimization
+
+    def _parse(self):
+        parser = argparse.ArgumentParser()
+        for key, value in self.params.items():
+            parser.add_argument(f'--{key}', type=type(value), default=value, required=False)
+        args = parser.parse_args()
+        for key, value in args.__dict__.items():
+            self.add_argument(key, value)
 
     def __str__(self):
-        return f"{self.model}_{self.encoder_type}_{self.dataset}_{self.loss}_{self.latent_dims}"
+        return f"{self.model}_{self.encoder_type}_{self.dataset}_" \
+            f"{self.loss}_{self.latent_size}"

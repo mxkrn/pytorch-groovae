@@ -33,18 +33,17 @@ class BaseRNNEncoder(nn.Module):
                 self._hidden_size,
                 self._hidden_size,
                 self._n_layers,
-                nonlinearity="relu",
                 batch_first=True,
                 dropout=self._dropout,
                 bidirectional=self._bidirectional),
-            # "lstm": nn.LSTM(
-            #     self._hidden_size,
-            #     self._hidden_size,
-            #     self._n_layers,
-            #     batch_first=True,
-            #     dropout=self._dropout,
-            #     bidirectional=self._bidirectional
-            # ),
+            "lstm": nn.LSTM(
+                self._hidden_size,
+                self._hidden_size,
+                self._n_layers,
+                batch_first=True,
+                dropout=self._dropout,
+                bidirectional=self._bidirectional
+            ),
             "gru": nn.GRU(
                 self._hidden_size,
                 self._hidden_size,
@@ -61,9 +60,11 @@ class BaseRNNEncoder(nn.Module):
             raise
         self._encoder_layer.flatten_parameters()
 
-    def forward(self, x, hidden):
+    def forward(self, x):
+        hidden = self.init_hidden().to(x.device)
         output = self._input_layer(x)
         output, hidden = self._encoder_layer(output, hidden)
+        # output = torch.transpose(0, 1)  # [batch, time, sample] -> [time, batch, sample]
         return output, hidden
 
     def init_hidden(self):

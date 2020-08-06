@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python setup.py sdist
+/home/max/.local/virtualenv/rhythmflow/bin/python3 setup.py sdist
 
 VERSION=$1
 GDRIVE=/mnt/c/Users/maxkr/Google\ Drive/Research/rhythmflow/

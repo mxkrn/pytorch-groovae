@@ -28,12 +28,14 @@ class BaseRNNDecoder(nn.Module):
         self._bidirectional = bidirectional
         self._build()
 
-    def forward(self, z, hidden, target):
+    def forward(self, z, target):
+        hidden = self.init_hidden().to(z.device)
         output = self._decode(z, hidden)
         r_loss = self._reconstruction_loss(output, target)
         return output, r_loss
 
-    def sample(self, z, hidden):
+    def sample(self, z):
+        hidden = self.init_hidden().to(z.device)
         output = self._decode(z, hidden)
         return output
 
@@ -77,11 +79,11 @@ class BaseRNNDecoder(nn.Module):
 
         sigm_velocities = torch.sigmoid(velocities)
         sigm_onsets = torch.sigmoid(onsets)
-        # tanh_offsets = torch.sigmoid(offsets)
+        tanh_offsets = torch.tanh(offsets)
 
         onset_loss = F.binary_cross_entropy(sigm_onsets, target_onsets)
         velocity_loss = F.mse_loss(sigm_velocities, target_velocities)
-        offset_loss = F.mse_loss(offsets, target_offsets)
+        offset_loss = F.mse_loss(tanh_offsets, target_offsets)
         loss = onset_loss + velocity_loss + offset_loss
         return loss
 
