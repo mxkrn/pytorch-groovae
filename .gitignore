@@ -3,6 +3,7 @@
 data
 logs
 notebooks
+outputs
 **/__pycache__
 **/**/__pycache__
 **/**/**/__pycache__
