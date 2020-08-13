@@ -38,6 +38,11 @@ class BaseVAE(nn.Module):
             nn.Linear(self._hidden_size, self._latent_size),
             nn.Softplus()
         )
+
+        # we are decompressing the latent space to generate a new sequence
+        # TODO: Use autoregressive sampler instead
+        self.decompress_latent = nn.Linear(self._latent_size, self._latent_size*SEQUENCE_LENGTH)
+
         # latent decoder
         self.from_latent = nn.Linear(self._latent_size, self._hidden_size)
 
@@ -51,21 +56,22 @@ class BaseVAE(nn.Module):
         return output
 
     def forward(self, x, hidden, target):
-        mu, log_var, hidden = self._encode(x)  # Gaussian encoding
+        mu, log_var = self._encode(x)  # Gaussian encoding
         z, z_loss = self._reparametrize(mu, log_var)
         output, r_loss = self._decode(z, target)  # Decode the samples
         return output, z_loss, r_loss
 
-    def _encode(self, x, hidden):
-        encoder_output, hidden = self.encoder(x, hidden)  # h = input for latent variables
-        # mu = self.mu_pooling(torch.tranpose(encoder_output, 1, 2))
+    def _encode(self, x):
+        encoder_output, _ = self.encoder(x)  # h = input for latent variables
         mu = self.mu(encoder_output)
-        # log_var = self.mu_pooling(torch.tranpose(encoder_output, 1, 2))
         log_var = self.log_var(encoder_output)
-        return mu, log_var, hidden
+        return mu, log_var
 
     def _decode(self, z, target):
-        output = self.from_latent(z)
+        z = torch.reshape(z, (self._batch_size, 1, self._latent_size))  # we need to accomodate the sequence dimension
+        output = self.decompress_latent(z)
+        output = torch.reshape(output, (self._batch_size, SEQUENCE_LENGTH, self._latent_size))
+        output = self.from_latent(output)
         output, r_loss = self.decoder(output, target)
         return output, r_loss
 
@@ -76,7 +82,7 @@ class BaseVAE(nn.Module):
         """
         eps = torch.randn_like(mu)  # standard normal distribution
         z = (log_var.exp().sqrt() * eps) + mu  # reparametrize
-        kl_div = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        kl_div = (-0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())) / mu.size(0)
         return z, kl_div
 
     def _sample(self, output):

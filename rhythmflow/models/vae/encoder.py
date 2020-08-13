@@ -64,8 +64,8 @@ class BaseRNNEncoder(nn.Module):
         hidden = self.init_hidden().to(x.device)
         output = self._input_layer(x)
         output, hidden = self._encoder_layer(output, hidden)
-        # output = torch.transpose(0, 1)  # [batch, time, sample] -> [time, batch, sample]
-        return output, hidden
+        output = torch.transpose(output, 0, 1)  # [batch, time, sample] -> [time, batch, sample]
+        return output[-1], hidden
 
     def init_hidden(self):
         return torch.zeros(self._n_layers, self._batch_size, self._hidden_size, dtype=torch.float)

@@ -1,15 +1,7 @@
-import torch.nn as nn
 import torch.optim as optim
 
 from models.vae import BaseRNNEncoder, BaseRNNDecoder
-# from .constructors import (
-#     # construct_encoder_decoder,
-#     construct_flow,
-#     # construct_disentangle,
-#     # construct_regressor,
-# )
 from .vae import VAE
-from .util import multinomial_loss, multinomial_mse_loss
 
 
 class ModelConstructor:
@@ -40,6 +32,14 @@ class ModelConstructor:
             self.config.encoder_type,
             self.config.n_layers
         )
+        encoder = BaseRNNEncoder(
+            self.config.input_size,
+            self.config.hidden_size,
+            self.config.latent_size,
+            self.config.batch_size,
+            self.config.encoder_type,
+            self.config.n_layers
+        )
         decoder = BaseRNNDecoder(
             self.config.input_size,
             self.config.hidden_size,
@@ -56,7 +56,7 @@ class ModelConstructor:
                 self.config.input_size,
                 self.config.hidden_size,
                 self.config.latent_size,
-                self.config.hidden_size
+                self.config.batch_size
             )
         }
         return models[self.model_type]

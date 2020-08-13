@@ -2,20 +2,25 @@ from __future__ import print_function
 import argparse
 import torch
 
+from util.logger import get_logger
+
 
 class Config:
-    def __init__(self, **kwargs):
+    def __init__(self, parse=True, **kwargs):
         """
         Object containing the configurations for model construction and training parameters
         To change a default value simply pass a key:value combo and it will be loaded from kwargs
         """
         self.params = self._load_params()
+        self.logger = get_logger(self.params['logging'])
         for key, value in kwargs.items():
             if key in self.params.keys():
+                self.logger.info(f'new config: {key}={value}')
                 self.params[key] = value
             else:
-                print(f'invalid configuration item: {key}')
-        self._parse()
+                self.logger.info(f'invalid configuration item: {key}')
+        if parse:
+            self._parse()
         self._cuda()
         self.__dict__ = self.params
 
@@ -46,8 +51,8 @@ class Config:
             "n_hidden": 512,
             "n_layers": 1,
             "hidden_size": 256,
-            "latent_size": 1,
-            "note_dropout": 0.1,
+            "latent_size": 8,
+            "note_dropout": 0.05,
             "start_regress": 15,
             "beta_factor": 1e3,  # latent loss weight
             "gamma_factor": 1,
@@ -63,7 +68,7 @@ class Config:
             "early_stop": 40,
             "plot_interval": 100,
             "batch_size": 16,
-            "epochs": 400,
+            "epochs": 500,
             "eval": 100,
             "lr": 1e-4,
             "semantic_dim": -1,  # semantic
