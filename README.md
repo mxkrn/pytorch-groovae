@@ -8,8 +8,7 @@ of the networks exported to ONNX please go to my other repository `M4L-RhythmFlo
 
 ## Groove
 
-`Groove` is a variational autoencoder (VAE) that expects a "naive" drum sequence and returns to us the most likely groove mapping. The groove mapping consists of microtiming
-and velocity profiles for each instrument at each timestep.
+`Groove` is a basically a PyTorch implementation of GrooVAE (https://github.com/magenta/magenta/tree/master/magenta/models/music_vae) which is a variational autoencoder (VAE) network that expects a "naive" drum sequence and returns to us the most likely groove mapping. The groove mapping consists of microtiming and velocity profiles for each instrument at each timestep.
 
 ## Syncopate
 
