@@ -1,6 +1,5 @@
 .tf
 .vscode
-data
 logs
 notebooks
 outputs
