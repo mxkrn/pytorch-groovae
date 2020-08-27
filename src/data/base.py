@@ -5,7 +5,7 @@ import torch
 
 from torch.utils.data import Dataset
 from data.converters import groove
-from data.constants import DATADIRS, DRUM_PITCH_CLASSES
+from data.constants import DATADIRS, DRUM_PITCH_CLASSES, SEQUENCE_LENGTH
 
 
 class RhythmDataset(Dataset):
@@ -83,14 +83,14 @@ class RhythmDataset(Dataset):
         return {"train": train, "valid": valid, "test": test}
 
     def __getitem__(self, idx):
-        # TODO: There should be consistent number and zero errors
+        # TODO: Better error handling thru preprocessing
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        sequence = self.midi_to_tensor(self.files[idx])
-        if len(sequence.inputs[0]) == 32:  # catch len(sequence) == 0 and len(sequence) > 32
-            return torch.as_tensor(sequence.inputs[0], dtype=torch.float), 0
-        # except IndexError:
-        #     return torch.zeros(self.input_size, dtype=torch.float), 1
+        tensor = self.midi_to_tensor(self.files[idx])
+        if len(tensor.inputs) != 0:
+            if len(tensor.inputs[0]) == SEQUENCE_LENGTH:
+                return tensor
+        return torch.zeros(self.input_size, dtype=torch.float)
 
     def __len__(self):
         return len(self.files)

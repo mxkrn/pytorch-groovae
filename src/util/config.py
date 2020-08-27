@@ -38,7 +38,7 @@ class Config:
             "train": True,
             "logging": 0,
             "dataset": "gmd",
-            "datadir": "/mnt/c/Users/maxkr/data/gmd_drumlab_merge/",
+            "datadir": "/mnt/c/Users/maxkr/data/gmd_merge/",
             "dataset_type": "groove",
             "output": "outputs",
             "train_type": "random",

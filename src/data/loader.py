@@ -32,14 +32,15 @@ def load_dataset(config, **kwargs):
     config.output_size = config.input_size
     return loader, config
 
+
 # DEBUG
-# if __name__ == "__main__":
-#     from util.config import Config
-#     config = Config("train")
-#     loader = load_dataset(config)
-#     error = 0
-#     total = 0
-#     for i, x in enumerate(loader[0]['test']):
-#         error += sum(x[1]).item()
-#         total += 16 - sum(x[1]).item()
-#     print(error)
+if __name__ == "__main__":
+    from util.config import Config
+    config = Config("train")
+    loader = load_dataset(config)
+    error = 0
+    total = 0
+    for i, x in enumerate(loader[0]['train']):
+        error += sum(x[1]).item()
+        total += 16 - sum(x[1]).item()
+    print(error)

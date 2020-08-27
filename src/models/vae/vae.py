@@ -40,7 +40,7 @@ class BaseVAE(nn.Module):
         )
 
         # we are decompressing the latent space to generate a new sequence
-        # TODO: Use autoregressive sampler instead
+        # TODO: Autoregressive sampler
         self.decompress_latent = nn.Linear(self._latent_size, self._latent_size*SEQUENCE_LENGTH)
 
         # latent decoder

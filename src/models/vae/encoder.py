@@ -36,14 +36,6 @@ class BaseRNNEncoder(nn.Module):
                 batch_first=True,
                 dropout=self._dropout,
                 bidirectional=self._bidirectional),
-            "lstm": nn.LSTM(
-                self._hidden_size,
-                self._hidden_size,
-                self._n_layers,
-                batch_first=True,
-                dropout=self._dropout,
-                bidirectional=self._bidirectional
-            ),
             "gru": nn.GRU(
                 self._hidden_size,
                 self._hidden_size,
