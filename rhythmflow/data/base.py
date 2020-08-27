@@ -1,18 +1,16 @@
 import glob
 import numpy as np
 import note_seq
-import os
 import torch
-
 
 from torch.utils.data import Dataset
 from .converters import drums_lib
-from data.constants import DATADIRS, NUM_DRUM_PITCH_CLASSES, DRUM_PITCH_IDX
+from data.constants import DATADIRS, NUM_DRUM_PITCH_CLASSES, DRUM_PITCH_CLASSES
 
 
-class BaseSequenceDataset(Dataset):
+class GrooveDataset(Dataset):
     def __init__(
-        self, dataset_name="drumlab", splits=[0.8, 0.1, 0.1], shuffle=True, split="train"
+        self, dataset_name="gmd", splits=[0.8, 0.1, 0.1], shuffle=True, split="train"
     ):
         self.files = self._get_files(dataset_name)
         data = self._create_splits(splits, shuffle)
@@ -29,12 +27,12 @@ class BaseSequenceDataset(Dataset):
         try:
             files = glob.glob(f"{DATADIRS[dataset_name]}*.mid")
         except KeyError as e:
-            print("please check dataset/constants.py that the dataset name exists")
+            print("please check data/constants.py that the dataset exists")
             raise e
         if len(files) > 0:
             return files
         else:
-            print(f"no files found at {DATADIRS[dataset_name]}*.mid")
+            print(f"no files found in {DATADIRS[dataset_name]}")
             raise FileNotFoundError
 
     def _track_from_midi(self, fname: str) -> list:
@@ -44,6 +42,9 @@ class BaseSequenceDataset(Dataset):
             sequence, steps_per_quarter=4
         )
         drum_track = drums_lib.DrumTrack()
+        converter = groove.Grooveconverter(
+
+        )
         drum_track.from_quantized_sequence(quantized_sequence)
         return self._one_hot_track(drum_track._events)
 
@@ -54,9 +55,6 @@ class BaseSequenceDataset(Dataset):
                 index = DRUM_PITCH_IDX[pitch]
                 data[step][0][index] = 1
         return data
-
-    def _format_track(self, track, trim=True, split=False):
-        return track
 
     def _create_splits(self, splits, shuffle):
         length = len(self.files)

@@ -1,4 +1,16 @@
-from .base import BaseNoteSequenceConverter
+import collections
+import copy
+import note_seq
+import numpy as np
+
+from .base import BaseNoteSequenceConverter, ConverterTensors
+
+
+def np_onehot(indices, depth, dtype=np.bool):
+    """Converts 1D array of indices to a one-hot 2D array with given depth."""
+    onehot_seq = np.zeros((len(indices), depth), dtype=dtype)
+    onehot_seq[np.arange(len(indices)), indices] = 1.0
+    return onehot_seq
 
 
 class GrooveConverter(BaseNoteSequenceConverter):
@@ -96,7 +108,7 @@ class GrooveConverter(BaseNoteSequenceConverter):
                     class_map[pitch] = cls
             return class_map
 
-        self._pitch_classes = pitch_classes or ROLAND_DRUM_PITCH_CLASSES
+        self._pitch_classes = pitch_classes
         self._pitch_class_map = _classes_to_map(self._pitch_classes)
         self._infer_pitch_classes = inference_pitch_classes or self._pitch_classes
         self._infer_pitch_class_map = _classes_to_map(self._infer_pitch_classes)
@@ -255,12 +267,12 @@ class GrooveConverter(BaseNoteSequenceConverter):
         def _extract_windows(tensor, window_size, hop_size):
             """Slide a window across the first dimension of a 2D tensor."""
             return [
-                tensor[i : i + window_size, :]
+                tensor[i: i + window_size, :]
                 for i in range(0, len(tensor) - window_size + 1, hop_size)
             ]
 
         try:
-            quantized_sequence = sequences_lib.quantize_note_sequence(
+            quantized_sequence = note_seq.sequences_lib.quantize_note_sequence(
                 note_sequence, self._steps_per_quarter
             )
             if (
@@ -468,7 +480,7 @@ class GrooveConverter(BaseNoteSequenceConverter):
                             velocities,
                             offsets,
                         ) = np.split(  # pylint: disable=unbalanced-tuple-unpacking
-                            sample[i * self._num_drums : (i + 1) * self._num_drums],
+                            sample[i * self._num_drums: (i + 1) * self._num_drums],
                             [1, self._num_velocity_bins + 1],
                             axis=1,
                         )
@@ -490,7 +502,7 @@ class GrooveConverter(BaseNoteSequenceConverter):
                 else:
                     if self._split_instruments:
                         hits, velocities, offsets = sample[
-                            i * self._num_drums : (i + 1) * self._num_drums
+                            i * self._num_drums: (i + 1) * self._num_drums
                         ].T
                     else:
                         (

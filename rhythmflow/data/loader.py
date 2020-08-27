@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 
-from .base import BaseSequenceDataset
+from .base import GrooveDataset
 
 # TODO: Add DataLoader caching, see -> https://github.com/pytorch/pytorch/pull/39274/files
 
@@ -9,7 +9,7 @@ def load_dataset(config, **kwargs):
     dataset = {"train": [], "valid": [], "test": []}
     loader = {"train": [], "valid": [], "test": []}
     for key in dataset.keys():
-        dataset[key] = BaseSequenceDataset(config.dataset_name, split=key)
+        dataset[key] = GrooveDataset(config.dataset_name, split=key)
         if key == "train":
             loader[key] = DataLoader(
                 dataset[key],
