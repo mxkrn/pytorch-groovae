@@ -1,6 +1,7 @@
 import abc
 import collections
 import numpy as np
+import note_seq
 
 
 class ConverterTensors(

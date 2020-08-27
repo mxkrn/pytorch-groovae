@@ -4,82 +4,100 @@ import note_seq
 import torch
 
 from torch.utils.data import Dataset
-from .converters import drums_lib
-from data.constants import DATADIRS, NUM_DRUM_PITCH_CLASSES, DRUM_PITCH_CLASSES
+from data.converters import groove
+from data.constants import DATADIRS, DRUM_PITCH_CLASSES
 
 
-class GrooveDataset(Dataset):
+class RhythmDataset(Dataset):
     def __init__(
-        self, dataset_name="gmd", splits=[0.8, 0.1, 0.1], shuffle=True, split="train"
+        self,
+        dataset_name="gmd",
+        splits=[0.8, 0.1, 0.1],
+        shuffle=True,
+        split="train",
+        humanize=True
     ):
-        self.files = self._get_files(dataset_name)
-        data = self._create_splits(splits, shuffle)
-        self.loaded_files = data[split]
-        self._extract_params()
-
-    def _extract_params(self):
-        """Extract parameters based on first file"""
-        self.params = dict()
-        sample = self._track_from_midi(self.loaded_files[0])
-        self.input_size = sample.shape
-
-    def _get_files(self, dataset_name):
         try:
             files = glob.glob(f"{DATADIRS[dataset_name]}*.mid")
         except KeyError as e:
-            print("please check data/constants.py that the dataset exists")
+            print(f"please check data/constants.py that a directory for {dataset_name} exists")
             raise e
-        if len(files) > 0:
-            return files
-        else:
+        if len(files) == 0:
             print(f"no files found in {DATADIRS[dataset_name]}")
             raise FileNotFoundError
 
-    def _track_from_midi(self, fname: str) -> list:
+        data = self._create_splits(files, splits, shuffle)
+        self.files = data[split]
+
+        try:
+            self.pitch_classes = DRUM_PITCH_CLASSES[dataset_name]
+        except KeyError:
+            print(f"check data/constants that a pitch class for {dataset_name} exists")
+            raise
+        self.humanize = humanize
+        self.input_size = self._get_input_size()
+
+    def midi_to_tensor(self, fname: str):
         with open(fname, "rb") as f:
             sequence = note_seq.midi_io.midi_to_note_sequence(f.read())
-        quantized_sequence = note_seq.sequences_lib.quantize_note_sequence(
-            sequence, steps_per_quarter=4
+            quantized_sequence = note_seq.sequences_lib.quantize_note_sequence(
+                sequence, steps_per_quarter=4
+            )
+        converter = groove.GrooveConverter(
+            split_bars=2,
+            steps_per_quarter=4,
+            quarters_per_bar=4,
+            pitch_classes=self.pitch_classes,
+            humanize=self.humanize
         )
-        drum_track = drums_lib.DrumTrack()
-        converter = groove.Grooveconverter(
+        tensor = converter.to_tensors(quantized_sequence)
+        return tensor
 
-        )
-        drum_track.from_quantized_sequence(quantized_sequence)
-        return self._one_hot_track(drum_track._events)
+    def _get_input_size(self):
+        """Extract input size"""
+        self.params = dict()
+        i = 0
+        while True:
+            sample = self.midi_to_tensor(self.files[i])
+            try:
+                return sample.inputs[0].shape
+            except IndexError:
+                i += 1
+                continue
 
-    def _one_hot_track(self, events) -> np.array:
-        data = torch.zeros((len(events), 1, NUM_DRUM_PITCH_CLASSES), dtype=int)
-        for step, event in enumerate(events):
-            for pitch in event:
-                index = DRUM_PITCH_IDX[pitch]
-                data[step][0][index] = 1
-        return data
-
-    def _create_splits(self, splits, shuffle):
-        length = len(self.files)
+    @staticmethod
+    def _create_splits(files, splits, shuffle):
         if shuffle:
-            idx = np.random.permutation(length)
-            self.files = [self.files[i] for i in idx]
-        idx = np.linspace(0, length - 1, length).astype("int")
+            idx = np.random.permutation(len(files))
+            files = [files[i] for i in idx]
+        idx = np.linspace(0, len(files) - 1, len(files)).astype("int")
 
-        train_idx = idx[: int(splits[0] * length)]
-        train = [self.files[i] for i in train_idx]
+        train_idx = idx[: int(splits[0] * len(files))]
+        valid_idx = idx[int(splits[0] * len(files)): int((splits[0] + splits[1]) * len(files))]
+        test_idx = idx[int((splits[0] + splits[1]) * len(files)):]
 
-        valid_idx = idx[int(splits[0] * length): int((splits[0] + splits[1]) * length)]
-        valid = [self.files[i] for i in valid_idx]
-
-        test_idx = idx[int((splits[0] + splits[1]) * length):]
-        test = [self.files[i] for i in test_idx]
+        train = [files[i] for i in train_idx]
+        valid = [files[i] for i in valid_idx]
+        test = [files[i] for i in test_idx]
 
         return {"train": train, "valid": valid, "test": test}
 
     def __getitem__(self, idx):
+        # TODO: There should be consistent number and zero errors
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        sequence = self._track_from_midi(self.loaded_files[idx])
-        sample = torch.as_tensor(sequence)
-        return sample
+        sequence = self.midi_to_tensor(self.files[idx])
+        if len(sequence.inputs[0]) == 32:  # catch len(sequence) == 0 and len(sequence) > 32
+            return torch.as_tensor(sequence.inputs[0], dtype=torch.float), 0
+        # except IndexError:
+        #     return torch.zeros(self.input_size, dtype=torch.float), 1
 
     def __len__(self):
-        return len(self.loaded_files)
+        return len(self.files)
+
+
+# DEBUG
+# if __name__ == "__main__":
+#     dataset = RhythmDataset()
+#     sample = dataset.midi_to_tensor(dataset.files[0])
+#     print(sample)

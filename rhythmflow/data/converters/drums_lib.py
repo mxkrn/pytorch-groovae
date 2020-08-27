@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""ADaptation from magenta/note_seq/drums_lib.py
+"""Adaptation from magenta/note_seq/drums_lib.py
 Utility functions for working with drums.
 Use extract_drum_tracks to extract drum tracks from a quantized NoteSequence.
 Use DrumTrack.to_sequence to write a drum track to a NoteSequence proto. Then

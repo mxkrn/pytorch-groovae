@@ -37,12 +37,12 @@ class Config:
         params = {
             "train": True,
             "logging": 0,
-            "dataset": "drumlab",
+            "dataset": "gmd",
             "datadir": "/mnt/c/Users/maxkr/data/gmd_drumlab_merge/",
             "dataset_type": "groove",
             "output": "outputs",
             "train_type": "random",
-            "nbworkers": 8,
+            "nbworkers": 0,
             "encoder_type": "rnn",
             "decoder_type": "rnn",
             "model": "vae",
@@ -80,7 +80,7 @@ class Config:
             "batch_out": 8,
             "check_exists": False,
             "time_limit": -1,
-            "device": ""
+            "device": "cpu"
         }
         return params
 

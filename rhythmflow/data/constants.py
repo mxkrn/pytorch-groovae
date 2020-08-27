@@ -1,7 +1,3 @@
-MIN_MIDI_PITCH = 0
-MAX_MIDI_PITCH = 127
-MIDI_PITCHES = MAX_MIDI_PITCH - MIN_MIDI_PITCH + 1
-
 DRUM_PITCH_CLASSES = {
     'target': [
         [36],  # kick drum
@@ -27,18 +23,8 @@ DRUM_PITCH_CLASSES = {
     ]
 }
 
-
-def generate_drum_pitch_idx(classes):
-    pitch_idx_dict = {}
-    for i in range(len(classes)):
-        for pitch in classes[i]:
-            pitch_idx_dict[pitch] = i
-    return pitch_idx_dict
-
-
-DRUM_PITCH_IDX = generate_drum_pitch_idx(DRUM_PITCH_CLASSES)
 NUM_DRUM_PITCH_CLASSES = len(DRUM_PITCH_CLASSES['target'])
 SEQUENCE_LENGTH = 32
 
-DATADIRS = {"gmd": "/mnt/c/Users/maxkr/data/gmd/groove/**/**/",
-            "drumlab": "/mnt/c/Users/Public/Documents/Drum Lab/MIDI Files/**/**/"}
+# TODO: Move preprocessing into training pipeline
+DATADIRS = {"gmd": "/mnt/c/Users/maxkr/data/gmd_merge/"}
