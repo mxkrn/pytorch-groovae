@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import DataLoader
 
 from data.base import RhythmDataset
@@ -33,14 +34,14 @@ def load_dataset(config, **kwargs):
     return loader, config
 
 
-# DEBUG
-if __name__ == "__main__":
-    from util.config import Config
-    config = Config("train")
-    loader = load_dataset(config)
-    error = 0
-    total = 0
-    for i, x in enumerate(loader[0]['train']):
-        error += sum(x[1]).item()
-        total += 16 - sum(x[1]).item()
-    print(error)
+# # DEBUG
+# if __name__ == "__main__":
+#     from util.config import Config
+#     config = Config("test")
+#     loader = load_dataset(config)
+#     error = 0
+#     total = 0
+#     for x in loader[0]['test']:
+#         error += torch.sum(x[1]).item()
+#         total += 16 - torch.sum(x[1]).item()
+#     print(error)

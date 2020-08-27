@@ -23,8 +23,8 @@ class Train:
 
         for batch in loader:
             # Prepare input
-            x = batch.inputs[0].to(self.config.device, non_blocking=True)
-            target = batch.outputs[0].to(self.config.device, non_blocking=True)
+            x = batch[0].to(self.config.device, non_blocking=True)
+            target = batch[1].to(self.config.device, non_blocking=True)
             hidden = model.encoder.init_hidden().to(self.config.device, non_blocking=True)
 
             # Forward pass

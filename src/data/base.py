@@ -83,14 +83,14 @@ class RhythmDataset(Dataset):
         return {"train": train, "valid": valid, "test": test}
 
     def __getitem__(self, idx):
-        # TODO: Better error handling thru preprocessing
+        # TODO: There should be consistent number and zero errors
         if torch.is_tensor(idx):
             idx = idx.tolist()
         tensor = self.midi_to_tensor(self.files[idx])
-        if len(tensor.inputs) != 0:
-            if len(tensor.inputs[0]) == SEQUENCE_LENGTH:
-                return tensor
-        return torch.zeros(self.input_size, dtype=torch.float)
+        if tensor.inputs:  # catch len(sequence) == 0 and len(sequence) > 32
+            return torch.as_tensor(tensor.inputs[0], dtype=torch.float), torch.as_tensor(tensor.outputs[0], dtype=torch.float)
+        else:
+            return torch.zeros(self.input_size, dtype=torch.float), torch.zeros(self.input_size, dtype=torch.float)
 
     def __len__(self):
         return len(self.files)
