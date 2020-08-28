@@ -18,6 +18,7 @@ def load_dataset(config, **kwargs):
                 shuffle=True,
                 num_workers=config.nbworkers,
                 pin_memory=False,
+                drop_last=True,
                 **kwargs
             )
         else:
@@ -27,6 +28,7 @@ def load_dataset(config, **kwargs):
                 shuffle=(config.train_type == "random"),
                 num_workers=config.nbworkers,
                 pin_memory=False,
+                drop_last=True,
                 **kwargs
             )
     config.input_size = dataset["train"].input_size[-1]

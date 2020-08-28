@@ -51,7 +51,7 @@ class Config:
             "n_hidden": 512,
             "n_layers": 1,
             "hidden_size": 256,
-            "latent_size": 8,
+            "latent_size": 16,
             "note_dropout": 0.05,
             "start_regress": 15,
             "beta_factor": 1e3,  # latent loss weight
@@ -80,7 +80,7 @@ class Config:
             "batch_out": 8,
             "check_exists": False,
             "time_limit": -1,
-            "device": "cpu"
+            "device": ""
         }
         return params
 
